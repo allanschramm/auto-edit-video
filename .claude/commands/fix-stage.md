@@ -57,14 +57,14 @@ Explicar o diagnóstico em linguagem clara e propor a ação de correção:
 **Para erros de LLM (plan/review/evaluate):**
 ```
 O stage "plan" falhou porque o LLM retornou JSON inválido.
-Correção: Rerunnar o stage com:
+Correção: Re-executar o stage com:
   auto-edit resume <video> --from plan
 ```
 
 **Para erros de bounds inválidos no execute:**
 ```
 O planner gerou um segmento com end=9999 mas o vídeo tem 63s.
-Correção: Rerrunnar a partir do plan para gerar um novo cut plan:
+Correção: Re-executar a partir do plan para gerar um novo cut plan:
   auto-edit resume <video> --from plan
 ```
 

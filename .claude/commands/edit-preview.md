@@ -86,7 +86,7 @@ Cortes: 8 total  (5 silêncios, 3 conteúdo)
 O que deseja fazer?
   [1] ✅ Parece bom — executar os cortes agora
   [2] ✏️  Revisar e ajustar os cortes  (abre /review-cuts)
-  [3] 🔁 Rerrunnar o planner com mais contexto
+  [3] 🔁 Re-executar o planner com mais contexto
   [4] 👁️  Só visualizar, não fazer nada
 ```
 

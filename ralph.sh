@@ -248,61 +248,7 @@ _call_llm() {
 _validate_and_save_json() {
     local raw_file="$1"
     local out_file="$2"
-    $PYTHON - "$raw_file" "$out_file" << 'PYEOF'
-import json, re, sys
-
-
-def _strip_fences(text: str) -> str:
-    text = text.strip()
-    if not text.startswith("```"):
-        return text
-    lines = text.splitlines()
-    if len(lines) < 2:
-        return text
-    # drop first ```line and trailing ```
-    body = "\n".join(lines[1:])
-    body = re.sub(r"\n```\s*$", "", body, count=1)
-    return body.strip()
-
-
-def _extract_json(raw: str):
-    raw = _strip_fences(raw)
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        pass
-    dec = json.JSONDecoder()
-    for m in re.finditer(r"\{", raw):
-        try:
-            obj, _end = dec.raw_decode(raw[m.start() :])
-            return obj
-        except json.JSONDecodeError:
-            continue
-    return None
-
-
-raw = open(sys.argv[1]).read()
-# Cursor --output-format json: single object, assistant text in "result"
-_stripped = raw.strip()
-if _stripped.startswith("{"):
-    try:
-        _outer = json.loads(_stripped)
-        if (
-            isinstance(_outer, dict)
-            and _outer.get("type") == "result"
-            and isinstance(_outer.get("result"), str)
-        ):
-            if _outer.get("is_error") is True:
-                sys.exit(1)
-            raw = _outer["result"]
-    except json.JSONDecodeError:
-        pass
-obj = _extract_json(raw)
-if obj is None:
-    sys.exit(1)
-json.dump(obj, open(sys.argv[2], "w"), indent=2, ensure_ascii=False)
-sys.exit(0)
-PYEOF
+    "$PYTHON" -m auto_edit.runner validate-json "$raw_file" "$out_file"
 }
 
 # ── Main Loop ─────────────────────────────────────────────────────────────────

@@ -60,7 +60,7 @@ O que deseja fazer?
   [1] ✅ Aprovar e executar os cortes agora
   [2] ✏️  Ajustar um corte específico
   [3] ➕ Adicionar um corte novo
-  [4] ❌ Cancelar e rerrunnar o planner com instruções
+  [4] ❌ Cancelar e re-executar o planner com instruções
   [5] 👁️  Só visualizar, não fazer nada ainda
 ```
 
@@ -97,7 +97,7 @@ Adicionar ao `reviewed_plan.json` no array `cuts` (ou remover do `kept_segments`
 Recalcular `kept_segments` a partir dos `cuts` atualizados.
 Mostrar o plano atualizado e voltar ao Passo 3.
 
-### Passo 4d — Se "Rerrunnar planner" (opção 4)
+### Passo 4d — Se "Re-executar planner" (opção 4)
 
 Perguntar: "Qual instrução adicional para o planner? (ex: 'cortar mais agressivamente', 'manter as pausas dramáticas')"
 

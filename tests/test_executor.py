@@ -146,9 +146,9 @@ class TestBuildKeepIntervals:
         # All segments so small that even after END_PADDING they remain sub-frame
         # Use cuts that leave only a tiny gap (< MIN_INTERVAL_DURATION)
         # Use cuts to create a tiny kept interval where padding doesn't help.
-        plan2 = {"cuts": [{"start": 0, "end": 59.99}, {"start": 60.0, "end": 60.0}]}
-        # Only kept: [59.99, 60.0] = 0.01s. After padding: [59.99, 60.0] (clamped).
-        # Duration 60.0, so end = min(60.0, 60.0 + 0.2) = 60.0. Interval = 0.01s < MIN.
+        plan2 = {"cuts": [{"start": 0, "end": 59.99}]}
+        # Only kept: [59.99, 60.0] = 0.01s. After padding: end = min(60.0, 60.0+0.2) = 60.0.
+        # Interval = 0.01s < MIN_INTERVAL_DURATION.
         with pytest.raises(RuntimeError, match="shorter than 1 frame"):
             _build_keep_intervals(plan2, 60.0)
 
