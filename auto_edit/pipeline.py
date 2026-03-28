@@ -7,7 +7,6 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
 
 STAGES = ["extract", "plan", "review", "execute", "overlay", "caption", "evaluate", "metadata", "done"]
 

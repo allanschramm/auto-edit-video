@@ -145,9 +145,6 @@ class TestBuildKeepIntervals:
     def test_filters_subframe_intervals(self):
         # All segments so small that even after END_PADDING they remain sub-frame
         # Use cuts that leave only a tiny gap (< MIN_INTERVAL_DURATION)
-        plan = {"kept_segments": [{"start": 5.0, "end": 5.001}]}
-        # After END_PADDING (0.2s), becomes [5.0, 5.201] — actually passes filter.
-        # To test the filter, we need segments without padding benefit:
         # Use cuts to create a tiny kept interval where padding doesn't help.
         plan2 = {"cuts": [{"start": 0, "end": 59.99}, {"start": 60.0, "end": 60.0}]}
         # Only kept: [59.99, 60.0] = 0.01s. After padding: [59.99, 60.0] (clamped).

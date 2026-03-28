@@ -1,7 +1,5 @@
 """Tests for auto_edit/pipeline.py — state machine, stage transitions, error persistence."""
-import json
 import pytest
-from pathlib import Path
 from auto_edit import pipeline as pl
 
 
@@ -13,7 +11,7 @@ def workspace(tmp_path):
     # Create a dummy video path
     video = tmp_path / "test.mp4"
     video.write_text("")  # empty placeholder
-    pipeline = pl.init(ws, video, "short", "test context")
+    pl.init(ws, video, "short", "test context")
     return ws
 
 

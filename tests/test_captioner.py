@@ -1,5 +1,4 @@
 """Tests for tools/captioner.py — remap, interval building, word grouping."""
-import pytest
 import sys
 from pathlib import Path
 

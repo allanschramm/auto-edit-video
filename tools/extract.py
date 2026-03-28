@@ -169,7 +169,7 @@ def _transcribe(audio: Path, model_name: str, language: str) -> tuple[list[dict]
     """
     print(f"[extract] Loading Whisper model '{model_name}'...")
     model = whisper.load_model(model_name)
-    print(f"[extract] Transcribing audio (this may take a while)...")
+    print("[extract] Transcribing audio (this may take a while)...")
     result = model.transcribe(
         str(audio),
         language=language,
@@ -292,7 +292,6 @@ REGRAS — leia com atenção:
             return words, segments
 
         # Safety filters — reject suspicious corrections before applying
-        import re as _re
         # Common short function words that should never be replaced
         _FUNCTION_WORDS = {"eu", "tu", "ele", "ela", "nós", "eles", "elas",
                            "um", "uma", "o", "a", "os", "as", "de", "da",
