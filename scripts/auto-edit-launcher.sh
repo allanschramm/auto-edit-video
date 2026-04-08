@@ -8,26 +8,30 @@ CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/auto-edit-video"
 VENV_DIR="$CACHE_DIR/venv"
 PKG_DIR="$(dirname "$(dirname "$(readlink -f "$0")")")/share/auto-edit-video"
 
-# ── First-run: create venv and install deps ──────────────────────────────────
-if [ ! -f "$VENV_DIR/.installed" ]; then
+# ── Setup/update: create venv and install deps when PKG_DIR changes ──────────
+if [ ! -f "$VENV_DIR/.pkg_path" ] || [ "$(cat "$VENV_DIR/.pkg_path" 2>/dev/null)" != "$PKG_DIR" ]; then
   echo ""
-  echo "  auto-edit-video — first-run setup"
+  echo "  auto-edit-video — setup/update"
   echo "  ──────────────────────────────────"
   echo ""
 
   mkdir -p "$CACHE_DIR"
 
-  echo "  [1/3] Creating virtual environment..."
-  python3 -m venv "$VENV_DIR"
+  if [ ! -d "$VENV_DIR" ]; then
+    echo "  [1/3] Creating virtual environment..."
+    python3 -m venv "$VENV_DIR"
+    "$VENV_DIR/bin/pip" install --upgrade pip --quiet 2>/dev/null
+  fi
 
-  echo "  [2/3] Installing auto-edit-video..."
-  "$VENV_DIR/bin/pip" install --upgrade pip --quiet 2>/dev/null
-  "$VENV_DIR/bin/pip" install "$PKG_DIR" --quiet
+  echo "  [2/3] Installing/Updating auto-edit-video..."
+  "$VENV_DIR/bin/pip" install "$PKG_DIR" --quiet --upgrade
 
-  echo "  [3/3] Installing openai-whisper + PyTorch (~2 GB, grab a coffee)..."
-  "$VENV_DIR/bin/pip" install openai-whisper --quiet
+  if ! "$VENV_DIR/bin/python" -c "import whisper" 2>/dev/null; then
+    echo "  [3/3] Installing openai-whisper + PyTorch (~2 GB, grab a coffee)..."
+    "$VENV_DIR/bin/pip" install openai-whisper --quiet
+  fi
 
-  touch "$VENV_DIR/.installed"
+  echo "$PKG_DIR" > "$VENV_DIR/.pkg_path"
   echo ""
   echo "  Setup complete! Running auto-edit..."
   echo ""

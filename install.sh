@@ -38,8 +38,12 @@ install_pkg() {
             fail "$pkg not found. Install Homebrew first: https://brew.sh"
         fi
     elif command -v apt-get >/dev/null 2>&1; then
+        if [ "${APT_UPDATED:-false}" = false ]; then
+            sudo apt-get update -qq || true
+            APT_UPDATED=true
+        fi
         info "Installing $pkg_apt via apt..."
-        sudo apt-get update -qq && sudo apt-get install -y -qq "$pkg_apt"
+        sudo apt-get install -y -qq "$pkg_apt"
     elif command -v dnf >/dev/null 2>&1; then
         info "Installing $pkg_dnf via dnf..."
         sudo dnf install -y "$pkg_dnf"
@@ -77,7 +81,7 @@ find_python() {
 PYTHON=$(find_python || true)
 if [ -z "$PYTHON" ]; then
     info "Python >= ${MIN_PYTHON_MAJOR}.${MIN_PYTHON_MINOR} not found, installing..."
-    install_pkg python3 python3 python3
+    install_pkg python python3 python3
     # Re-check after install
     PYTHON=$(find_python || true)
     if [ -z "$PYTHON" ]; then
