@@ -17,12 +17,10 @@ Configure in Claude Code settings:
 """
 from __future__ import annotations
 
-import json
 import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
