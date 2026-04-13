@@ -176,6 +176,13 @@ def finalize(workspace: Path) -> Path:
         metadata = json.loads(metadata_path.read_text())
         _write_metadata_txt(txt_dst, metadata, pipeline["type"])
 
+    # Aggregate and display token usage stats
+    token_stats = _aggregate_token_stats(workspace)
+    if token_stats:
+        pipeline["token_stats"] = token_stats
+        save(workspace, pipeline)
+        _print_token_summary(token_stats)
+
     # Clean up large intermediate files — keep JSONs for debugging/resume
     _cleanup_workspace(workspace, pipeline["type"])
 
@@ -197,12 +204,46 @@ def _cleanup_workspace(workspace: Path, video_type: str) -> None:
         f.unlink(missing_ok=True)
     for f in workspace.glob(".output_*.txt"):
         f.unlink(missing_ok=True)
+    # Remove token stats (already aggregated into pipeline.json)
+    _remove_if_exists(workspace / ".token_stats.jsonl")
 
 
 def _remove_if_exists(path: Path) -> None:
     if path.exists():
         path.unlink()
         print(f"[finalize] Removed: {path.name}")
+
+
+def _aggregate_token_stats(workspace: Path) -> dict | None:
+    """Read .token_stats.jsonl and aggregate per stage (summing across iterations)."""
+    stats_file = workspace / ".token_stats.jsonl"
+    if not stats_file.exists():
+        return None
+    content = stats_file.read_text(encoding="utf-8").strip()
+    if not content:
+        return None
+    stages: dict[str, dict] = {}
+    total_tokens = 0
+    for line in content.splitlines():
+        entry = json.loads(line)
+        name = entry["stage"]
+        if name not in stages:
+            stages[name] = {"calls": 0, "chars": 0, "estimated_tokens": 0}
+        stages[name]["calls"] += 1
+        stages[name]["chars"] += entry["chars"]
+        stages[name]["estimated_tokens"] += entry["estimated_tokens"]
+        total_tokens += entry["estimated_tokens"]
+    return {"per_stage": stages, "total_estimated_tokens": total_tokens}
+
+
+def _print_token_summary(stats: dict) -> None:
+    """Print a human-readable token usage table."""
+    print("\n[finalize] === Token Usage ===")
+    for stage, s in stats["per_stage"].items():
+        calls = s["calls"]
+        tokens = s["estimated_tokens"]
+        print(f"  {stage:12s}  ({calls}x)  {tokens:>8,} tokens")
+    print(f"  {'TOTAL':12s}        {stats['total_estimated_tokens']:>8,} tokens")
 
 
 def _write_metadata_txt(path: Path, metadata: dict, video_type: str) -> None:

@@ -1,11 +1,11 @@
 """
-runner.py — Prompt builder for ralph.sh agent stages.
+runner.py -- Prompt builder for ralph.sh agent stages.
 Called as: python auto_edit/runner.py build-prompt <stage> <workspace> <prompt_file>
 Prints the full prompt to stdout (safe JSON embedding, no shell quoting issues).
 
 Also:
-  invoke-cursor — run Cursor Agent CLI with prompt on stdin (no argv size limit).
-  validate-json — strip markdown fences, extract first JSON object from LLM output.
+  invoke-cursor -- run Cursor Agent CLI with prompt on stdin (no argv size limit).
+  validate-json -- strip markdown fences, extract first JSON object from LLM output.
 """
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ def invoke_cursor(prompt_path: Path, output_path: Path, repo_root: Path) -> int:
         else ["--mode", "ask"]
     )
 
-    # Prompt must be stdin only. Do not use `-p -` — Cursor treats `-` as the literal prompt.
+    # Prompt must be stdin only. Do not use `-p -` -- Cursor treats `-` as the literal prompt.
     tail = ["--print", "--workspace", str(repo_root.resolve())]
     override = os.environ.get("AUTO_EDIT_CURSOR_BIN")
     if override == "cursor":
@@ -78,7 +78,7 @@ def build_prompt(stage: str, workspace: Path, prompt_file: Path) -> str:
 
     sections = [base_prompt]
 
-    # ── Per-stage context injection ───────────────────────────────────────────
+    # -- Per-stage context injection -------------------------------------------
 
     if stage == "plan":
         transcription = _read_json(workspace / "transcription.json")
@@ -96,23 +96,21 @@ def build_prompt(stage: str, workspace: Path, prompt_file: Path) -> str:
             ]
         if video_type == "short":
             sections.append(
-                "\n## Pacing (short-form)\n"
-                "- **Tight, dry cuts**: remove dead air **> ~0.75s** unless it is clearly a comedic or emotional beat.\n"
-                "- Kill false starts, filler, repeated hooks, and long breaths between clauses.\n"
-                "- Prefer jump-cuts / energetic rhythm over leaving “comfort pauses”."
+                '\n## Pacing (short-form)\n'
+                '- **Tight, dry cuts**: remove dead air **> ~0.75s** unless it is clearly a comedic or emotional beat.\n'
+                '- Kill false starts, filler, repeated hooks, and long breaths between clauses.\n'
+                '- Prefer jump-cuts / energetic rhythm over leaving “comfort pauses”.'
             )
         else:
             sections.append(
-                "\n## Pacing (long-form)\n"
-                "- Still aim for a **dynamic** feel: trim pauses **> ~1.0s** that are not deliberate emphasis.\n"
-                "- Remove redundancy and sluggish transitions; keep intentional rhetorical pauses only.\n"
-                "- Avoid a “podcast slow” cadence unless the content demands it."
+                '\n## Pacing (long-form)\n'
+                '- Still aim for a **dynamic** feel: trim pauses **> ~1.0s** that are not deliberate emphasis.\n'
+                '- Remove redundancy and sluggish transitions; keep intentional rhetorical pauses only.\n'
+                '- Avoid a “podcast slow” cadence unless the content demands it.'
             )
         sections += [
             "\n## Transcription Data",
-            "```json",
-            json.dumps(transcription, indent=2, ensure_ascii=False),
-            "```",
+            _compact_json(transcription),
         ]
 
     elif stage == "review":
@@ -125,25 +123,21 @@ def build_prompt(stage: str, workspace: Path, prompt_file: Path) -> str:
         ]
         if video_type == "short":
             sections.append(
-                "\n## Pacing (short-form)\n"
-                "- Enforce **snappy** rhythm: approve aggressive silence trims; reject plans that leave obvious dead air.\n"
-                "- Cut boundaries only need a **brief** audio buffer (~0.15–0.25s), not long padding."
+                '\n## Pacing (short-form)\n'
+                '- Enforce **snappy** rhythm: approve aggressive silence trims; reject plans that leave obvious dead air.\n'
+                '- Cut boundaries only need a **brief** audio buffer (~0.15-0.25s), not long padding.'
             )
         else:
             sections.append(
-                "\n## Pacing (long-form)\n"
-                "- Prefer **tighter** plans: challenge pauses and weak segments that hurt momentum.\n"
-                "- Do not undo good trims just to add “breathing room” unless the sentence would clip."
+                '\n## Pacing (long-form)\n'
+                '- Prefer **tighter** plans: challenge pauses and weak segments that hurt momentum.\n'
+                '- Do not undo good trims just to add “breathing room” unless the sentence would clip.'
             )
         sections += [
             "\n## Proposed Cut Plan",
-            "```json",
-            json.dumps(cut_plan, indent=2, ensure_ascii=False),
-            "```",
-            "\n## Original Transcription",
-            "```json",
-            json.dumps(transcription, indent=2, ensure_ascii=False),
-            "```",
+            _compact_json(cut_plan),
+            "\n## Original Transcription (segments only)",
+            _compact_json(_slim_for_review(transcription)),
         ]
 
     elif stage == "overlay":
@@ -152,10 +146,8 @@ def build_prompt(stage: str, workspace: Path, prompt_file: Path) -> str:
             "\n## Video Information",
             f"- Type: {video_type}",
             f"- Context: {context or '(no context provided)'}",
-            "\n## Transcription Data",
-            "```json",
-            json.dumps(transcription, indent=2, ensure_ascii=False),
-            "```",
+            "\n## Transcription Data (word timestamps)",
+            _compact_json(_slim_for_overlay(transcription)),
         ]
 
     elif stage == "evaluate":
@@ -171,10 +163,8 @@ def build_prompt(stage: str, workspace: Path, prompt_file: Path) -> str:
             f"- Context: {context or '(no context provided)'}",
             f"- Iteration: {iteration} of {max_iterations}",
             f"- Max iterations: {max_iterations}",
-            "\n## Final Video Transcription (post-edit)",
-            "```json",
-            json.dumps(post_cut_transcript, indent=2, ensure_ascii=False),
-            "```",
+            "\n## Final Video Transcription (post-edit, segments only)",
+            _compact_json(_slim_for_review(post_cut_transcript)),
         ]
 
     elif stage == "metadata":
@@ -184,22 +174,23 @@ def build_prompt(stage: str, workspace: Path, prompt_file: Path) -> str:
             or _read_json(workspace / "transcription.json")
         )
         language = pipeline.get("language", "pt")
+        text = _slim_for_metadata(transcript)
         sections += [
             "\n## Video Information",
             f"- Type: {video_type}",
             f"- Context: {context or '(no context provided)'}",
             f"- Language: {language}",
-            "\n## Final Video Transcription",
-            "```json",
-            json.dumps(transcript, indent=2, ensure_ascii=False),
-            "```",
+            "\n## Final Video Transcription (text only)",
+            text,
         ]
 
     sections.append(
         "\nRespond with ONLY valid JSON. No markdown code fences, no explanation."
     )
 
-    return "\n".join(sections)
+    prompt = "\n".join(sections)
+    _record_token_stats(workspace, stage, prompt)
+    return prompt
 
 
 def _read_json(path: Path) -> dict:
@@ -214,7 +205,67 @@ def _read_json_optional(path: Path) -> dict | None:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-# ── JSON validation (extracted from ralph.sh) ────────────────────────────────
+# -- Transcription slimming ---------------------------------------------------
+
+
+def _slim_for_review(t: dict) -> dict:
+    """Segments with text + timestamps only (no words, energy, confidence)."""
+    return {
+        "duration": t["duration"],
+        "segments": [
+            {"start": s["start"], "end": s["end"], "text": s["text"]}
+            for s in t.get("segments", [])
+        ],
+    }
+
+
+def _slim_for_overlay(t: dict) -> dict:
+    """Word-level timestamps only (no confidence, energy, segments)."""
+    return {
+        "duration": t["duration"],
+        "words": [
+            {"word": w["word"], "start": w["start"], "end": w["end"]}
+            for w in t.get("words", [])
+        ],
+    }
+
+
+def _slim_for_metadata(t: dict) -> str:
+    """Plain text transcript -- no timestamps, no JSON."""
+    return " ".join(s["text"].strip() for s in t.get("segments", []) if s.get("text"))
+
+
+# -- Compact JSON serialization ------------------------------------------------
+
+
+def _truncate_floats(obj, decimals=2):
+    """Recursively round floats to save tokens on serialized JSON."""
+    if isinstance(obj, float):
+        return round(obj, decimals)
+    if isinstance(obj, dict):
+        return {k: _truncate_floats(v, decimals) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_truncate_floats(x, decimals) for x in obj]
+    return obj
+
+
+def _compact_json(obj) -> str:
+    """Serialize to compact JSON (no indent, minimal separators)."""
+    return json.dumps(_truncate_floats(obj), ensure_ascii=False, separators=(",", ":"))
+
+
+# -- Token stats ---------------------------------------------------------------
+
+
+def _record_token_stats(workspace: Path, stage: str, prompt: str) -> None:
+    """Append token usage estimate for this stage to .token_stats.jsonl."""
+    stats_file = workspace / ".token_stats.jsonl"
+    entry = {"stage": stage, "chars": len(prompt), "estimated_tokens": len(prompt) // 4}
+    with open(stats_file, "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry) + "\n")
+
+
+# -- JSON validation (extracted from ralph.sh) ---------------------------------
 
 
 def _strip_fences(text: str) -> str:
