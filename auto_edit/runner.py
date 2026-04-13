@@ -211,9 +211,9 @@ def _read_json_optional(path: Path) -> dict | None:
 def _slim_for_review(t: dict) -> dict:
     """Segments with text + timestamps only (no words, energy, confidence)."""
     return {
-        "duration": t["duration"],
+        "duration": t.get("duration", 0),
         "segments": [
-            {"start": s["start"], "end": s["end"], "text": s["text"]}
+            {"start": s.get("start", 0), "end": s.get("end", 0), "text": s.get("text", "")}
             for s in t.get("segments", [])
         ],
     }
@@ -222,9 +222,9 @@ def _slim_for_review(t: dict) -> dict:
 def _slim_for_overlay(t: dict) -> dict:
     """Word-level timestamps only (no confidence, energy, segments)."""
     return {
-        "duration": t["duration"],
+        "duration": t.get("duration", 0),
         "words": [
-            {"word": w["word"], "start": w["start"], "end": w["end"]}
+            {"word": w.get("word", ""), "start": w.get("start", 0), "end": w.get("end", 0)}
             for w in t.get("words", [])
         ],
     }

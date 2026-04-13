@@ -225,14 +225,21 @@ def _aggregate_token_stats(workspace: Path) -> dict | None:
     stages: dict[str, dict] = {}
     total_tokens = 0
     for line in content.splitlines():
-        entry = json.loads(line)
-        name = entry["stage"]
-        if name not in stages:
-            stages[name] = {"calls": 0, "chars": 0, "estimated_tokens": 0}
-        stages[name]["calls"] += 1
-        stages[name]["chars"] += entry["chars"]
-        stages[name]["estimated_tokens"] += entry["estimated_tokens"]
-        total_tokens += entry["estimated_tokens"]
+        try:
+            entry = json.loads(line)
+            if not isinstance(entry, dict):
+                continue
+            name = entry.get("stage")
+            if not name:
+                continue
+            if name not in stages:
+                stages[name] = {"calls": 0, "chars": 0, "estimated_tokens": 0}
+            stages[name]["calls"] += 1
+            stages[name]["chars"] += entry.get("chars", 0)
+            stages[name]["estimated_tokens"] += entry.get("estimated_tokens", 0)
+            total_tokens += entry.get("estimated_tokens", 0)
+        except (json.JSONDecodeError, TypeError):
+            continue
     return {"per_stage": stages, "total_estimated_tokens": total_tokens}
 
 
